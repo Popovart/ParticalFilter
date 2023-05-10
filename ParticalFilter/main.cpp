@@ -39,15 +39,14 @@ sf::Font font;
 const int shifting = 100;
 double terrain(int x) {
     //shifting
-
     x -= shifting;
-    // Изменение этих параметров приведет к различным горам и долинам
-    double amplitude1 = 70;  // Амплитуда первой синусоиды
-    double frequency1 = 0.04; // Частота первой синусоиды
-    double amplitude2 = 40;  // Амплитуда второй синусоиды
-    double frequency2 = 0.04; // Частота второй синусоиды
-    double amplitude3 = 90;  // Амплитуда второй синусоиды
-    double frequency3 = 0.1; // Частота второй синусоиды
+    
+    double amplitude1 = 70;
+    double frequency1 = 0.04;
+    double amplitude2 = 40;
+    double frequency2 = 0.04;
+    double amplitude3 = 90;
+    double frequency3 = 0.1;
 
     if(x > terrainWidth){
         return -1000;
@@ -55,14 +54,20 @@ double terrain(int x) {
     if(x > 617-shifting && x < 930-shifting){
         return 196;
     }
+    if(x > 930-shifting){
+        double a = 500;
+        double b = (930-shifting+terrainWidth)/2;
+        double c = 50;
+        return 195-(a * exp(-0.5 * pow((x - b) / c, 2)));
+    }
     return amplitude1 * sin(frequency1 * x) + amplitude2 * sin(frequency2 * x) + amplitude3 * sin(frequency3 * x);
 }
 
 int getAgentPosition(int terrainWidth) {
-//    srand(time(0)); // Инициализация генератора случайных чисел
-//    return rand() % (terrainWidth + 1);
+    srand(time(0));
+    return rand() % (terrainWidth + 1);
     //return 300;
-    return 400;
+    //return 400;
     //return terrainWidth-1;
 }
 
@@ -102,15 +107,14 @@ void updateProbabilities(double agentPosition, std::vector<double>& probabilitie
             }
         }
     }
-    
-    if(numOfleftedProb != 0)
-        additionalProb = sumOfDeletedProb / numOfleftedProb;
-    for (int x = 0; x < terrainWidth; ++x){
-        if(probabilities[x] != 0){
-            probabilities[x] += additionalProb;
-        }
-    }
+
+    double sumOfChances = 0;
+    for (int i{}; i < probabilities.size(); ++i)
+        sumOfChances += probabilities[i];
+    for (int i{}; i < probabilities.size(); ++i)
+        probabilities[i] = probabilities[i] / sumOfChances;
 }
+
 
 void moveProbabilities(std::vector<double> &probabilities){
     std::vector<double> new_probabilities(probabilities.size(), 0);
@@ -168,7 +172,7 @@ int moveAgent(int &agentPosition, std::vector<double> &probabilities){
 
 void updateProbabilityGraph(std::vector<double>& probabilities, sf::VertexArray& probabilityGraph) {
     for (int x = 0; x < probabilities.size(); ++x){
-        double y = probabilities[x] * 1000; // Умножьте на 500, чтобы увеличить видимость. Вы можете настроить это значение.
+        double y = probabilities[x] * 500;
         probabilityGraph[x].position = sf::Vector2f(x, -y+360);
         probabilityGraph[x].color = sf::Color::Red;
 
@@ -187,7 +191,6 @@ void moveAction(int currentPos, std::vector<double> &probabilities, int agentPos
 
 void callWinWindow(int foundPosition, int agentPosition){
     
-    //показать окно срезультатами и преостановить другие действия
     sf::RenderWindow agentWindow(sf::VideoMode(500, 200), "Agent Position");
     sf::Text agentPositionText, header, realAgentPositionText;
     agentPositionText.setFont(font); header.setFont(font); realAgentPositionText.setFont(font);
@@ -289,10 +292,10 @@ int main(int, char const**)
             }
                 
             
-            for(auto const &val : probabilities){
-                std::cout << val << " ";
-            }
-            std::cout << std::endl;
+//            for(auto const &val : probabilities){
+//                std::cout << val << " ";
+//            }
+//            std::cout << std::endl;
         }
         
         // Process events
@@ -327,25 +330,16 @@ int main(int, char const**)
                 }
                     
                 
-                for(auto const &val : probabilities){
-                    std::cout << val << " ";
-                }
-                std::cout << std::endl;
+//                for(auto const &val : probabilities){
+//                    std::cout << val << " ";
+//                }
+//                std::cout << std::endl;
                 
             }
             
             
             
         }
-        
-            // Load a sprite to display
-        //    sf::Texture texture;
-        //    if (!texture.loadFromFile(resourcePath() + "cute_image.jpg")) {
-        //        return EXIT_FAILURE;
-        //    }
-        //    sf::Sprite sprite(texture);
-        
-        
 
         // Clear screen
         window.clear();
