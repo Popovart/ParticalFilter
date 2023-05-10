@@ -30,6 +30,12 @@ const double accuracy = 0.9;
 const double probOfAction = 0.8;
 const double probOfReversedAction = 0.2;
 
+
+bool stopParam = false;
+
+sf::Font font;
+
+
 const int shifting = 100;
 double terrain(int x) {
     //shifting
@@ -64,6 +70,7 @@ int whereIsAgent(double accuracy, std::vector<double> probabilities){
     for(auto const &val : probabilities){
         if(val >= accuracy){
             std::cout << "Agent's position is: " << count << std::endl;
+            std::cout << "Probability of thish position is: " << val << std::endl;
             return count;
         }
         count++;
@@ -77,9 +84,9 @@ int whereIsAgent(double accuracy, std::vector<double> probabilities){
 
 
 void updateProbabilities(double agentPosition, std::vector<double>& probabilities){
-
+    
     double agentDistToTerrain = terrain(agentPosition);
-    double epsilon = 10;
+    double epsilon = 5;
     double additionalProb = 0;
     int numOfleftedProb = 0;
     double sumOfDeletedProb = 0;
@@ -106,6 +113,12 @@ void updateProbabilities(double agentPosition, std::vector<double>& probabilitie
 
 void moveProbabilities(std::vector<double> &probabilities){
     std::vector<double> new_probabilities(probabilities.size(), 0);
+    double sum = 0;
+    for(auto const &val : probabilities){
+        sum += val;
+    }
+    if(sum>1.1)
+        std::cout << "ERROR prob > 1 " << sum << " \n\n\n";
     
     for(int x = 0; x < probabilities.size(); x++){
         if(x > 0){
@@ -154,7 +167,7 @@ int moveAgent(int &agentPosition, std::vector<double> &probabilities){
 
 void updateProbabilityGraph(std::vector<double>& probabilities, sf::VertexArray& probabilityGraph) {
     for (int x = 0; x < probabilities.size(); ++x){
-        double y = probabilities[x] * 500; // Умножьте на 500, чтобы увеличить видимость. Вы можете настроить это значение.
+        double y = probabilities[x] * 1000; // Умножьте на 500, чтобы увеличить видимость. Вы можете настроить это значение.
         probabilityGraph[x].position = sf::Vector2f(x, -y+360);
         probabilityGraph[x].color = sf::Color::Red;
 
@@ -162,6 +175,44 @@ void updateProbabilityGraph(std::vector<double>& probabilities, sf::VertexArray&
 }
 
 
+void moveAction(int currentPos, std::vector<double> &probabilities, int agentPosition, sf::RectangleShape &agentLine, sf::Sprite &agentSprite, sf::VertexArray &probabilityGraph){
+    
+    agentLine.setPosition(currentPos, 420);
+    agentSprite.setPosition(currentPos-agentSprite.getGlobalBounds().width/2, 400);
+    updateProbabilities(agentPosition, probabilities);
+    updateProbabilityGraph(probabilities, probabilityGraph);
+    
+}
+
+void callWinWindow(int foundPosition, int agentPosition){
+    
+    //показать окно срезультатами и преостановить другие действия
+    sf::RenderWindow agentWindow(sf::VideoMode(500, 200), "Agent Position");
+    sf::Text agentPositionText, header, realAgentPositionText;
+    agentPositionText.setFont(font); header.setFont(font); realAgentPositionText.setFont(font);
+    agentPositionText.setCharacterSize(24); header.setCharacterSize(24); realAgentPositionText.setCharacterSize(24);
+    agentPositionText.setFillColor(sf::Color::Black); header.setFillColor(sf::Color::Black); realAgentPositionText.setFillColor(sf::Color::Black);
+    agentPositionText.setString("Found agent's position: " + std::to_string(foundPosition) + " +- 1 pixel"); header.setString("Agent's position has been found!");
+    realAgentPositionText.setString("Real agent's position: " + std::to_string(agentPosition));
+    agentPositionText.setPosition(getCenterPosition(agentPositionText, agentWindow).x, getCenterPosition(agentPositionText, agentWindow).y+15);
+    header.setPosition(getCenterPosition(header, agentWindow).x, getCenterPosition(header, agentWindow).y-35);
+    realAgentPositionText.setPosition(getCenterPosition(realAgentPositionText, agentWindow).x, getCenterPosition(realAgentPositionText, agentWindow).y+65);
+    while (agentWindow.isOpen()) {
+        sf::Event agentEvent;
+        while (agentWindow.pollEvent(agentEvent)) {
+            if (agentEvent.type == sf::Event::Closed || (agentEvent.type == sf::Event::KeyPressed && agentEvent.key.code == sf::Keyboard::Escape)) {
+                agentWindow.close();
+                stopParam = true;
+            }
+        }
+        agentWindow.clear(sf::Color::White);
+        agentWindow.draw(agentPositionText);
+        agentWindow.draw(realAgentPositionText);
+        agentWindow.draw(header);
+        agentWindow.display();
+    }
+
+}
 
 
 
@@ -170,7 +221,6 @@ int main(int, char const**)
     // Create the main window
     window.setFramerateLimit(60);
     
-    sf::Font font;
     if (!font.loadFromFile(resourcePath() + "sansation.ttf")) {
         return EXIT_FAILURE;
     }
@@ -189,6 +239,7 @@ int main(int, char const**)
     int agentPosition = getAgentPosition(terrainWidth);
    
     updateProbabilities(agentPosition, probabilities);
+    
     
     
     sf::VertexArray graph(sf::LinesStrip, terrainWidth);
@@ -222,9 +273,26 @@ int main(int, char const**)
     
     agentSprite.setPosition(agentPosition-agentSprite.getGlobalBounds().width/2, 400);
     
+    
     // Start the game loop
     while (window.isOpen())
     {
+        if(!stopParam){
+            int currentPos = moveAgent(agentPosition, probabilities);
+            moveAction(currentPos, probabilities, agentPosition, agentLine, agentSprite, probabilityGraph);
+            int foundPosition = whereIsAgent(accuracy, probabilities);
+            
+            if(foundPosition > 0){
+                //показать окно срезультатами и преостановить другие действия
+                callWinWindow(foundPosition, agentPosition);
+            }
+                
+            
+            for(auto const &val : probabilities){
+                std::cout << val << " ";
+            }
+            std::cout << std::endl;
+        }
         
         // Process events
         sf::Event event;
@@ -240,42 +308,21 @@ int main(int, char const**)
                 window.close();
             }
             
+            // stop moment
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Space) {
+                stopParam = !stopParam;
+            }
+            
             // move agent
             if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Right) {
                 
                 int currentPos = moveAgent(agentPosition, probabilities);
-                agentLine.setPosition(currentPos, 420);
-                agentSprite.setPosition(currentPos-agentSprite.getGlobalBounds().width/2, 400);
-                updateProbabilities(agentPosition, probabilities);
-                updateProbabilityGraph(probabilities, probabilityGraph);
+                moveAction(currentPos, probabilities, agentPosition, agentLine, agentSprite, probabilityGraph);
                 int foundPosition = whereIsAgent(accuracy, probabilities);
                 
                 if(foundPosition > 0){
                     //показать окно срезультатами и преостановить другие действия
-                    sf::RenderWindow agentWindow(sf::VideoMode(500, 200), "Agent Position");
-                    sf::Text agentPositionText, header, realAgentPositionText;
-                    agentPositionText.setFont(font); header.setFont(font); realAgentPositionText.setFont(font);
-                    agentPositionText.setCharacterSize(24); header.setCharacterSize(24); realAgentPositionText.setCharacterSize(24);
-                    agentPositionText.setFillColor(sf::Color::Black); header.setFillColor(sf::Color::Black); realAgentPositionText.setFillColor(sf::Color::Black);
-                    agentPositionText.setString("Found agent's position: " + std::to_string(foundPosition) + " +- 1 pixel"); header.setString("Agent's position has been found!");
-                    realAgentPositionText.setString("Real agent's position: " + std::to_string(agentPosition));
-                    agentPositionText.setPosition(getCenterPosition(agentPositionText, agentWindow).x, getCenterPosition(agentPositionText, agentWindow).y+15);
-                    header.setPosition(getCenterPosition(header, agentWindow).x, getCenterPosition(header, agentWindow).y-35);
-                    realAgentPositionText.setPosition(getCenterPosition(realAgentPositionText, agentWindow).x, getCenterPosition(realAgentPositionText, agentWindow).y+65);
-                    while (agentWindow.isOpen()) {
-                        sf::Event agentEvent;
-                        while (agentWindow.pollEvent(agentEvent)) {
-                            if (agentEvent.type == sf::Event::Closed || (agentEvent.type == sf::Event::KeyPressed && agentEvent.key.code == sf::Keyboard::Escape)) {
-                                agentWindow.close();
-                            }
-                        }
-                        agentWindow.clear(sf::Color::White);
-                        agentWindow.draw(agentPositionText);
-                        agentWindow.draw(realAgentPositionText);
-                        agentWindow.draw(header);
-                        agentWindow.display();
-                    }
-
+                    callWinWindow(foundPosition, agentPosition);
                 }
                     
                 
