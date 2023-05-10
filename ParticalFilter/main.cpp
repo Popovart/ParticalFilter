@@ -59,9 +59,10 @@ double terrain(int x) {
 }
 
 int getAgentPosition(int terrainWidth) {
-    srand(time(0)); // Инициализация генератора случайных чисел
-    return rand() % (terrainWidth + 1);
+//    srand(time(0)); // Инициализация генератора случайных чисел
+//    return rand() % (terrainWidth + 1);
     //return 300;
+    return 400;
     //return terrainWidth-1;
 }
 
