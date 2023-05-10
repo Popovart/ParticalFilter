@@ -102,15 +102,13 @@ void updateProbabilities(double agentPosition, std::vector<double>& probabilitie
             }
         }
     }
-    
-    if(numOfleftedProb != 0)
-        additionalProb = sumOfDeletedProb / numOfleftedProb;
-    for (int x = 0; x < terrainWidth; ++x){
-        if(probabilities[x] != 0){
-            probabilities[x] += additionalProb;
-        }
-    }
+    double sumOfChances = 0;
+    for (int i{}; i < probabilities.size(); ++i)
+        sumOfChances += probabilities[i];
+    for (int i{}; i < probabilities.size(); ++i)
+        probabilities[i] = probabilities[i] / sumOfChances;
 }
+
 
 void moveProbabilities(std::vector<double> &probabilities){
     std::vector<double> new_probabilities(probabilities.size(), 0);
