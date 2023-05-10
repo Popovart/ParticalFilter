@@ -53,10 +53,10 @@ double terrain(int x) {
 }
 
 int getAgentPosition(int terrainWidth) {
-//    srand(time(0)); // Инициализация генератора случайных чисел
-//    return rand() % (terrainWidth + 1);
+    srand(time(0)); // Инициализация генератора случайных чисел
+    return rand() % (terrainWidth + 1);
     //return 300;
-    return terrainWidth-1;
+    //return terrainWidth-1;
 }
 
 int whereIsAgent(double accuracy, std::vector<double> probabilities){
